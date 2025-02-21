@@ -76,6 +76,18 @@ for container in $running_containers; do
         # 使用 jq 提取 网络
         network_mode=$(echo "$HostConfig_json_data" | jq -r '.NetworkMode')
         set_cmd "--network" $network_mode
+
+        # 使用 jq 提取 端口映射
+        bindings_list_json=$(echo "$HostConfig_json_data" | jq -r '.PortBindings')
+        if [ "$bindings_list_json" != "null" ] && [ "$bindings_list_json" != "{}" ]; then
+            # 提取容器端口和宿主机端口
+            readarray -t port_mappings < <(echo "$bindings_list_json" | jq -r 'to_entries | .[] | "\(.key | split("/")[0]):\(.value[0].HostPort)"')
+            # 循环处理每个 HostPort
+            for port in "${port_mappings[@]}"; do
+                set_cmd "-p" $port
+            done
+        fi
+
     fi
 
     # 使用 jq 提取 Image 字段的值
@@ -83,7 +95,7 @@ for container in $running_containers; do
     image=$(echo "$Config_json_data" | jq -r '.Image')
     set_cmd "null" $image
 
-    echo "set cmd yes:${create_cmd[@]}"
+    echo "get create docker command:${create_cmd[@]}"
     echo "${create_cmd[@]}" >> docker_create.txt
 
 done
