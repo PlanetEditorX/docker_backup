@@ -1,0 +1,5 @@
+docker run -d --name /wakeup_pc -v /vol1/1000/docker/wakeup/config.ini:/app/config.ini -v /vol1/1000/docker/wakeup/log.txt:/app/log.txt --restart always --network host yexundao/wakeup_pc:latest
+docker run -d --name /duplicati -v /vol2/1000/Storage/Backup/duplicati:/backups -v /vol1/1000/docker/duplicati:/config --restart always --network default lscr.io/linuxserver/duplicati:latest
+docker run -d --name /mysql -v /vol2/1000/Storage/apps/mysql:/var/lib/mysql --restart always --network default mysql:latest
+docker run -d --name /portainer -v /vol1/1000/docker/portainer:/data -v /etc/localtime:/etc/localtime -v /var/run/docker.sock:/var/run/docker.sock --restart always --network default portainer/portainer-ce:latest
+docker run -d --name /homeassistant -v /vol1/1000/docker/home-assistantan:/config -v /etc/localtime:/etc/localtime -v /run/dbus:/run/dbus --restart always --network host registry.fnnas.com/fnapp/homeassistant_home-assistant
