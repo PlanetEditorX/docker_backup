@@ -41,26 +41,4 @@ for container in $(docker ps -aq); do
     docker rmi $image_name
 done
 
-# 备份所有数据卷
-echo "备份所有数据卷..."
-for volume in $(docker volume ls -q); do
-    volume_name=$(docker volume inspect --format '{{.Name}}' $volume)
-    echo "正在处理数据卷：$volume_name ($volume)"
-
-    # 删除旧的备份文件（匹配数据卷名称，忽略时间戳）
-    old_backup_files=$(ls $BACKUP_DIR/backup_volume_$volume_name-*.tar 2> /dev/null)
-    if [ -n "$old_backup_files" ]; then
-        for old_file in $old_backup_files; do
-            echo "删除旧的备份文件：$old_file"
-            rm -f "$old_file"
-        done
-    fi
-
-    # 创建新的备份
-    backup_file="$BACKUP_DIR/backup_volume_$volume_name-$DATE.tar"
-    echo "正在备份数据卷到文件：$backup_file"
-    docker run --rm -v $volume:/data -v $BACKUP_DIR:/backup busybox tar cvf /backup/$backup_file /data
-    echo "数据卷 $volume_name 的备份完成。"
-done
-
 echo "备份完成！"
