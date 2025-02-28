@@ -34,6 +34,18 @@ set_cmd() {
     fi
 }
 
+# 定义一个函数来处理字符串添加引号
+add_quotes_if_space() {
+    local input="$1"
+    if [[ "$input" =~ [[:space:]] ]]; then  # 检查是否包含空格
+        local key="${input%%=*}"  # 提取等号前的内容
+        local value="${input#*=}"  # 提取等号后的内容
+        echo "${key}=\"${value}\""  # 重新组合并为等号后的内容添加双引号
+    else
+        echo "$input"  # 如果没有空格，保持原样
+    fi
+}
+
 for container in $running_containers; do
     echo "Processing container: $container"
     # 在这里对每个容器执行操作
@@ -47,7 +59,7 @@ for container in $running_containers; do
     done < <(echo "$inspect_output" | jq -r "to_entries|map(\"\(.key)=\(.value|tostring)\")|.[]")
     # 获取名称
     name=${container_info["Name"]}
-    set_cmd "--name" $name
+    set_cmd "--name" ${name#/}
 
     # 获取挂载
     mounts_json_data=${container_info["Mounts"]}
@@ -90,8 +102,20 @@ for container in $running_containers; do
 
     fi
 
-    # 使用 jq 提取 Image 字段的值
     Config_json_data=${container_info["Config"]}
+    # 使用 jq 提取 Env 数组，并将其转换为 Bash 数组
+    Env=$(echo "$Config_json_data" | jq -r '.Env[]')
+    readarray -t Env_array <<< "$Env"
+    if [ "$Env_array" != "null" ] && [ "$Env_array" != "{}" ]; then
+        for item in "${Env_array[@]}"; do
+            # set_cmd "-e" "$item"
+            new_item=$(add_quotes_if_space "$item")
+            echo $new_item
+            set_cmd "-e" "$new_item"
+        done
+    fi
+
+    # 使用 jq 提取 Image 字段的值
     image=$(echo "$Config_json_data" | jq -r '.Image')
     set_cmd "null" $image
 
